@@ -1,0 +1,131 @@
+﻿{
+    "success":  true,
+    "count":  5,
+    "data":  [
+                 {
+                     "_id":  "693bfbb3d4a2c3dc727b95b6",
+                     "title":  "Advanced React Development",
+                     "description":  "Build complex applications with React and modern tools",
+                     "instructor":  {
+                                        "_id":  "693bfbb2d4a2c3dc727b9596",
+                                        "name":  "Jane Instructor",
+                                        "email":  "instructor2@example.com"
+                                    },
+                     "instructorName":  "Jane Instructor",
+                     "price":  5499,
+                     "duration":  50,
+                     "category":  "Programming",
+                     "level":  "Advanced",
+                     "enrolledStudents":  [
+
+                                          ],
+                     "thumbnail":  "default-course-thumbnail.jpg",
+                     "isActive":  true,
+                     "totalSales":  0,
+                     "revenue":  0,
+                     "createdAt":  "2025-12-12T11:25:39.589Z",
+                     "updatedAt":  "2025-12-12T11:25:39.589Z",
+                     "__v":  0
+                 },
+                 {
+                     "_id":  "693bfbb3d4a2c3dc727b95b3",
+                     "title":  "Business Strategy 101",
+                     "description":  "Essential business strategy concepts for entrepreneurs",
+                     "instructor":  {
+                                        "_id":  "693bfbb2d4a2c3dc727b9595",
+                                        "name":  "John Instructor",
+                                        "email":  "instructor1@example.com"
+                                    },
+                     "instructorName":  "John Instructor",
+                     "price":  3999,
+                     "duration":  30,
+                     "category":  "Business",
+                     "level":  "Beginner",
+                     "enrolledStudents":  [
+                                              "693bfbb2d4a2c3dc727b9598"
+                                          ],
+                     "thumbnail":  "default-course-thumbnail.jpg",
+                     "isActive":  true,
+                     "totalSales":  1,
+                     "revenue":  3999,
+                     "createdAt":  "2025-12-12T11:25:39.586Z",
+                     "updatedAt":  "2025-12-12T18:41:00.577Z",
+                     "__v":  2
+                 },
+                 {
+                     "_id":  "693bfbb3d4a2c3dc727b95b0",
+                     "title":  "Data Science with Python",
+                     "description":  "Learn data analysis and machine learning with Python",
+                     "instructor":  {
+                                        "_id":  "693bfbb2d4a2c3dc727b9597",
+                                        "name":  "Bob Instructor",
+                                        "email":  "instructor3@example.com"
+                                    },
+                     "instructorName":  "Bob Instructor",
+                     "price":  4999,
+                     "duration":  60,
+                     "category":  "Data Science",
+                     "level":  "Intermediate",
+                     "enrolledStudents":  [
+
+                                          ],
+                     "thumbnail":  "default-course-thumbnail.jpg",
+                     "isActive":  true,
+                     "totalSales":  0,
+                     "revenue":  0,
+                     "createdAt":  "2025-12-12T11:25:39.581Z",
+                     "updatedAt":  "2025-12-12T11:25:39.581Z",
+                     "__v":  0
+                 },
+                 {
+                     "_id":  "693bfbb3d4a2c3dc727b95ac",
+                     "title":  "Web Design Fundamentals",
+                     "description":  "Master the basics of modern web design",
+                     "instructor":  {
+                                        "_id":  "693bfbb2d4a2c3dc727b9596",
+                                        "name":  "Jane Instructor",
+                                        "email":  "instructor2@example.com"
+                                    },
+                     "instructorName":  "Jane Instructor",
+                     "price":  3499,
+                     "duration":  35,
+                     "category":  "Design",
+                     "level":  "Beginner",
+                     "enrolledStudents":  [
+                                              "693bfbb2d4a2c3dc727b9598"
+                                          ],
+                     "thumbnail":  "default-course-thumbnail.jpg",
+                     "isActive":  true,
+                     "totalSales":  1,
+                     "revenue":  3499,
+                     "createdAt":  "2025-12-12T11:25:39.577Z",
+                     "updatedAt":  "2025-12-12T13:14:36.901Z",
+                     "__v":  1
+                 },
+                 {
+                     "_id":  "693bfbb3d4a2c3dc727b95a6",
+                     "title":  "Introduction to JavaScript",
+                     "description":  "Learn the fundamentals of JavaScript programming language",
+                     "instructor":  {
+                                        "_id":  "693bfbb2d4a2c3dc727b9595",
+                                        "name":  "John Instructor",
+                                        "email":  "instructor1@example.com"
+                                    },
+                     "instructorName":  "John Instructor",
+                     "price":  2999,
+                     "duration":  40,
+                     "category":  "Programming",
+                     "level":  "Beginner",
+                     "enrolledStudents":  [
+
+                                          ],
+                     "thumbnail":  "default-course-thumbnail.jpg",
+                     "isActive":  true,
+                     "totalSales":  0,
+                     "revenue":  0,
+                     "createdAt":  "2025-12-12T11:25:39.571Z",
+                     "updatedAt":  "2025-12-12T18:29:10.631Z",
+                     "__v":  1
+                 }
+             ]
+}
