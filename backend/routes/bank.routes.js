@@ -5,7 +5,8 @@ const {
   setupBankAccount,
   getBankBalance,
   processTransaction,
-  getTransactionHistory
+  getTransactionHistory,
+  addFunds
 } = require('../controllers/bank.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { handleValidationErrors } = require('../middleware/validation.middleware');
@@ -21,10 +22,15 @@ const transactionValidation = [
   body('secret').notEmpty().withMessage('Bank secret is required')
 ];
 
+const addFundsValidation = [
+  body('amount').isFloat({ min: 1 }).withMessage('Amount must be at least ₹1')
+];
+
 // Routes
 router.post('/setup', protect, setupValidation, handleValidationErrors, setupBankAccount);
 router.get('/balance', protect, getBankBalance);
 router.post('/transaction', protect, transactionValidation, handleValidationErrors, processTransaction);
 router.get('/transactions', protect, getTransactionHistory);
+router.post('/add-funds', protect, addFundsValidation, handleValidationErrors, addFunds);
 
 module.exports = router;

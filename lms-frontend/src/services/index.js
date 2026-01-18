@@ -15,6 +15,11 @@ export const courseService = {
     getInstructorCourses: () => api.get('/courses/instructor/my-courses'), // For instructors
     updateProgress: (courseId, progress) => api.put(`/courses/${courseId}/progress`, { progress }),
     markMaterialCompleted: (courseId, materialId) => api.post(`/courses/${courseId}/materials/${materialId}/complete`),
+    // Quiz methods
+    getQuizzes: (courseId) => api.get(`/courses/${courseId}/quizzes`),
+    addQuiz: (courseId, quizData) => api.post(`/courses/${courseId}/quizzes`, quizData),
+    submitQuiz: (courseId, quizId, answers) => api.post(`/courses/${courseId}/quizzes/${quizId}/submit`, { answers }),
+    deleteQuiz: (courseId, quizId) => api.delete(`/courses/${courseId}/quizzes/${quizId}`),
 };
 
 export const bankService = {
@@ -22,6 +27,7 @@ export const bankService = {
     getBalance: () => api.get('/bank/balance'),
     processTransaction: (transactionData) => api.post('/bank/transaction', transactionData),
     getTransactionHistory: () => api.get('/bank/transactions'),
+    addFunds: (amount) => api.post('/bank/add-funds', { amount }),
 };
 
 export const transactionService = {

@@ -646,14 +646,27 @@ exports.markMaterialCompleted = async (req, res) => {
       enrollment.completedMaterials.push(materialId);
     }
 
-    // Calculate progress
+    // Calculate progress based on materials AND quizzes
     const course = await Course.findById(id);
     const totalMaterials = course.materials.length;
-    const completedCount = enrollment.completedMaterials.length;
+    const totalRequiredQuizzes = course.quizzes ? course.quizzes.filter(q => q.isRequired).length : 0;
+    const totalItems = totalMaterials + totalRequiredQuizzes;
+
+    const completedMaterialsCount = enrollment.completedMaterials.length;
+    
+    // Count passed required quizzes
+    let passedRequiredQuizzes = 0;
+    if (course.quizzes && enrollment.quizAttempts) {
+      passedRequiredQuizzes = course.quizzes.filter(q => {
+        if (!q.isRequired) return false;
+        const attempts = enrollment.quizAttempts.filter(a => a.quizId === q._id.toString());
+        return attempts.some(a => a.passed);
+      }).length;
+    }
 
     let progress = 0;
-    if (totalMaterials > 0) {
-      progress = Math.round((completedCount / totalMaterials) * 100);
+    if (totalItems > 0) {
+      progress = Math.round(((completedMaterialsCount + passedRequiredQuizzes) / totalItems) * 100);
     }
 
     // Ensure progress doesn't exceed 100
@@ -682,6 +695,327 @@ exports.markMaterialCompleted = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error marking material as completed',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Add quiz to course
+// @route   POST /api/courses/:id/quizzes
+// @access  Private/Instructor
+exports.addQuiz = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is the course instructor
+    if (course.instructor.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to add quizzes to this course'
+      });
+    }
+
+    const { title, description, questions, passingScore, timeLimit, isRequired } = req.body;
+
+    // Validate questions
+    if (!questions || questions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quiz must have at least one question'
+      });
+    }
+
+    // Validate each question has 4 options and a valid correct answer
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.question || !q.options || q.options.length !== 4) {
+        return res.status(400).json({
+          success: false,
+          message: `Question ${i + 1} must have exactly 4 options`
+        });
+      }
+      if (q.correctAnswer < 0 || q.correctAnswer > 3) {
+        return res.status(400).json({
+          success: false,
+          message: `Question ${i + 1} has invalid correct answer index`
+        });
+      }
+    }
+
+    course.quizzes.push({
+      title,
+      description: description || '',
+      questions,
+      passingScore: passingScore || 70,
+      timeLimit: timeLimit || 0,
+      order: course.quizzes.length,
+      isRequired: isRequired !== false
+    });
+
+    await course.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Quiz added successfully',
+      data: course.quizzes[course.quizzes.length - 1]
+    });
+  } catch (error) {
+    console.error('Add quiz error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding quiz',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get course quizzes (for enrolled users)
+// @route   GET /api/courses/:id/quizzes
+// @access  Private/Learner
+exports.getQuizzes = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is enrolled or instructor
+    const isInstructor = course.instructor.toString() === req.user._id.toString();
+    const isEnrolled = req.user.enrolledCourses.some(
+      e => e.courseId.toString() === req.params.id
+    );
+
+    if (!isInstructor && !isEnrolled) {
+      return res.status(403).json({
+        success: false,
+        message: 'You must be enrolled to view quizzes'
+      });
+    }
+
+    // For learners, hide correct answers
+    let quizzes = course.quizzes.map(quiz => {
+      const quizObj = quiz.toObject();
+      if (!isInstructor) {
+        quizObj.questions = quizObj.questions.map(q => ({
+          question: q.question,
+          options: q.options,
+          _id: q._id
+          // correctAnswer and explanation hidden
+        }));
+      }
+      return quizObj;
+    });
+
+    // Get user's quiz attempts
+    const enrollment = req.user.enrolledCourses.find(
+      e => e.courseId.toString() === req.params.id
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        quizzes,
+        attempts: enrollment?.quizAttempts || []
+      }
+    });
+  } catch (error) {
+    console.error('Get quizzes error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching quizzes',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Submit quiz answers
+// @route   POST /api/courses/:id/quizzes/:quizId/submit
+// @access  Private/Learner
+exports.submitQuiz = async (req, res) => {
+  try {
+    const { id, quizId } = req.params;
+    const { answers } = req.body; // Array of { questionIndex, selectedAnswer }
+
+    const course = await Course.findById(id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    const enrollment = user.enrolledCourses.find(
+      e => e.courseId.toString() === id
+    );
+
+    if (!enrollment) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not enrolled in this course'
+      });
+    }
+
+    const quiz = course.quizzes.id(quizId);
+
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz not found'
+      });
+    }
+
+    if (!answers || answers.length !== quiz.questions.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please answer all questions'
+      });
+    }
+
+    // Grade the quiz
+    let correctCount = 0;
+    const gradedAnswers = answers.map((ans, idx) => {
+      const question = quiz.questions[idx];
+      const isCorrect = ans.selectedAnswer === question.correctAnswer;
+      if (isCorrect) correctCount++;
+      return {
+        questionIndex: idx,
+        selectedAnswer: ans.selectedAnswer,
+        isCorrect
+      };
+    });
+
+    const score = Math.round((correctCount / quiz.questions.length) * 100);
+    const passed = score >= quiz.passingScore;
+
+    // Initialize quizAttempts if needed
+    if (!enrollment.quizAttempts) {
+      enrollment.quizAttempts = [];
+    }
+
+    // Record the attempt
+    enrollment.quizAttempts.push({
+      quizId: quizId,
+      score,
+      passed,
+      answers: gradedAnswers,
+      attemptedAt: new Date()
+    });
+
+    // Recalculate progress based on materials AND quizzes
+    const totalMaterials = course.materials.length;
+    const totalRequiredQuizzes = course.quizzes.filter(q => q.isRequired).length;
+    const totalItems = totalMaterials + totalRequiredQuizzes;
+
+    const completedMaterials = enrollment.completedMaterials?.length || 0;
+    
+    // Count passed required quizzes
+    const passedRequiredQuizzes = course.quizzes.filter(q => {
+      if (!q.isRequired) return false;
+      const attempts = enrollment.quizAttempts.filter(a => a.quizId === q._id.toString());
+      return attempts.some(a => a.passed);
+    }).length;
+
+    let progress = 0;
+    if (totalItems > 0) {
+      progress = Math.round(((completedMaterials + passedRequiredQuizzes) / totalItems) * 100);
+    }
+    progress = Math.min(progress, 100);
+
+    enrollment.progress = progress;
+
+    if (progress === 100 && !enrollment.completed) {
+      enrollment.completed = true;
+      enrollment.completedAt = new Date();
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: passed ? 'Congratulations! You passed the quiz!' : 'Quiz submitted. Keep trying!',
+      data: {
+        score,
+        passed,
+        passingScore: quiz.passingScore,
+        correctCount,
+        totalQuestions: quiz.questions.length,
+        answers: gradedAnswers.map((a, idx) => ({
+          ...a,
+          correctAnswer: quiz.questions[idx].correctAnswer,
+          explanation: quiz.questions[idx].explanation
+        })),
+        progress: enrollment.progress,
+        courseCompleted: enrollment.completed
+      }
+    });
+  } catch (error) {
+    console.error('Submit quiz error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error submitting quiz',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Delete quiz from course
+// @route   DELETE /api/courses/:id/quizzes/:quizId
+// @access  Private/Instructor
+exports.deleteQuiz = async (req, res) => {
+  try {
+    const { id, quizId } = req.params;
+
+    const course = await Course.findById(id);
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if user is the course instructor
+    if (course.instructor.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to delete quizzes from this course'
+      });
+    }
+
+    const quiz = course.quizzes.id(quizId);
+
+    if (!quiz) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz not found'
+      });
+    }
+
+    course.quizzes.pull(quizId);
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Quiz deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete quiz error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting quiz',
       error: error.message
     });
   }

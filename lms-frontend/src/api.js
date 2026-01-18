@@ -42,6 +42,7 @@ export const courseAPI = {
   removeMaterial: (courseId, materialId) => api.delete(`/courses/${courseId}/materials/${materialId}`),
   getMyCourses: () => api.get('/courses/learner/enrolled'),
   updateProgress: (courseId, materialId) => api.put(`/courses/${courseId}/progress`, { materialId }),
+  markMaterialCompleted: (courseId, materialId) => api.post(`/courses/${courseId}/materials/${materialId}/complete`),
   getMaterialFileUrl: (courseId, materialId) => {
     const token = localStorage.getItem('token');
     return `${API_URL}/courses/${courseId}/materials/${materialId}/file?token=${token}`;

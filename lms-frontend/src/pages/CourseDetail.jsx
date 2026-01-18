@@ -5,6 +5,7 @@ import Navbar from '../layouts/Navbar';
 import { courseService, transactionService, certificateService, authService } from '../services';
 import MaterialsList from '../components/MaterialsList';
 import MaterialUpload from '../components/MaterialUpload';
+import QuizSection from '../components/QuizSection';
 
 function CourseDetail() {
   const { user, updateUser } = useAuth();
@@ -192,6 +193,21 @@ function CourseDetail() {
                       </div>
                     )}
                   </div>
+
+                  {/* Quiz Section */}
+                  {(isEnrolled || (user && course.instructor && ((user._id || user.id) === (course.instructor._id || course.instructor)))) && (
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-bold text-gray-800 mb-4">Course Quizzes</h2>
+                      <QuizSection
+                        courseId={course._id}
+                        isInstructor={user && course.instructor && ((user._id || user.id) === (course.instructor._id || course.instructor))}
+                        onRefresh={() => {
+                          fetchCourseDetail();
+                          updateUserContext();
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="lg:col-span-1">
@@ -249,16 +265,21 @@ function CourseDetail() {
                             ></div>
                           </div>
                         </div>
-                        <div>
-                          <h1 className='text-red-500 font-bold'>Caution!!</h1>
-                          <p>This current version of that website can't generate the certificate yet</p>
-                        </div>
+
+                        {progress < 100 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                            <p className="text-blue-800 text-sm">
+                              📚 Complete all materials and pass all required quizzes to earn your certificate!
+                            </p>
+                          </div>
+                        )}
+
                         {progress === 100 && (
                           <button
                             onClick={handleGenerateCertificate}
                             className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded transition font-medium"
                           >
-                            Generate Certificate
+                            🏆 Generate Certificate
                           </button>
                         )}
                       </div>

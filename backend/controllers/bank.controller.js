@@ -222,4 +222,75 @@ exports.getTransactionHistory = async (req, res) => {
   }
 };
 
+// @desc    Add funds to bank account (from LMS organization)
+// @route   POST /api/bank/add-funds
+// @access  Private/Learner
+exports.addFunds = async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    // Validate amount
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid amount greater than 0'
+      });
+    }
+
+    // Maximum single deposit limit
+    const maxDeposit = 100000;
+    if (amount > maxDeposit) {
+      return res.status(400).json({
+        success: false,
+        message: `Maximum single deposit is ₹${maxDeposit.toLocaleString()}`
+      });
+    }
+
+    // Check if user has bank account
+    if (!req.user.bankAccount.accountNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bank account not set up. Please set up your bank account first.'
+      });
+    }
+
+    // Transfer from LMS organization account to user account
+    const bankResult = await BankService.transfer({
+      from: process.env.LMS_BANK_ACCOUNT,
+      to: req.user.bankAccount.accountNumber,
+      amount: parseFloat(amount),
+      secret: process.env.BANK_SECRET_KEY,
+      description: `Funds added to account - Top up`
+    });
+
+    if (!bankResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: bankResult.message || 'Failed to add funds'
+      });
+    }
+
+    // Update local balance cache
+    req.user.bankAccount.balance = bankResult.data.to.newBalance;
+    await req.user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Funds added successfully',
+      data: {
+        transactionId: bankResult.data.transactionId,
+        amount: parseFloat(amount),
+        newBalance: bankResult.data.to.newBalance
+      }
+    });
+  } catch (error) {
+    console.error('Add funds error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding funds',
+      error: error.message
+    });
+  }
+};
+
 module.exports = exports;

@@ -70,7 +70,7 @@ exports.generateCertificate = async (req, res) => {
       courseTitle: course.title,
       instructor: course.instructor._id,
       instructorName: course.instructor.name,
-      completionDate: enrollment.completedAt,
+      completionDate: enrollment.completedAt || new Date(),
       verificationUrl: `${req.protocol}://${req.get('host')}/api/certificates/verify/${Date.now()}`
     });
 

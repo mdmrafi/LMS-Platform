@@ -1,5 +1,58 @@
 const mongoose = require('mongoose');
 
+// Quiz question schema for course quizzes
+const quizQuestionSchema = new mongoose.Schema({
+  question: {
+    type: String,
+    required: true
+  },
+  options: [{
+    type: String,
+    required: true
+  }],
+  correctAnswer: {
+    type: Number, // Index of correct option (0-3)
+    required: true,
+    min: 0,
+    max: 3
+  },
+  explanation: {
+    type: String,
+    default: ''
+  }
+});
+
+// Quiz schema for course
+const quizSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  questions: [quizQuestionSchema],
+  passingScore: {
+    type: Number,
+    default: 70, // Percentage required to pass
+    min: 0,
+    max: 100
+  },
+  timeLimit: {
+    type: Number, // In minutes, 0 means no limit
+    default: 0
+  },
+  order: {
+    type: Number,
+    default: 0
+  },
+  isRequired: {
+    type: Boolean,
+    default: true // Must pass to complete course
+  }
+});
+
 const courseMaterialSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -77,6 +130,7 @@ const courseSchema = new mongoose.Schema({
     default: 'Beginner'
   },
   materials: [courseMaterialSchema],
+  quizzes: [quizSchema], // Course quizzes for progress validation
   enrolledStudents: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

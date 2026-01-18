@@ -8,6 +8,10 @@ function BankAccount() {
   const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showAddFundsModal, setShowAddFundsModal] = useState(false);
+  const [addFundsAmount, setAddFundsAmount] = useState('');
+  const [addingFunds, setAddingFunds] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchBalance();
@@ -24,6 +28,40 @@ function BankAccount() {
       setLoading(false);
     }
   };
+
+  const handleAddFunds = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMessage('');
+    setAddingFunds(true);
+
+    try {
+      const amount = parseFloat(addFundsAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setError('Please enter a valid amount');
+        setAddingFunds(false);
+        return;
+      }
+
+      const response = await bankService.addFunds(amount);
+      setBalance(prev => ({
+        ...prev,
+        balance: response.data.data.newBalance
+      }));
+      setSuccessMessage(`Successfully added ₹${amount.toLocaleString()} to your account!`);
+      setAddFundsAmount('');
+      setTimeout(() => {
+        setShowAddFundsModal(false);
+        setSuccessMessage('');
+      }, 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to add funds');
+    } finally {
+      setAddingFunds(false);
+    }
+  };
+
+  const presetAmounts = [1000, 5000, 10000, 25000, 50000];
 
   if (loading) {
     return (
@@ -43,7 +81,7 @@ function BankAccount() {
         <div className="container mx-auto px-4 max-w-4xl">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">Bank Account</h1>
 
-          {error && (
+          {error && !showAddFundsModal && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
               {error}
             </div>
@@ -63,6 +101,16 @@ function BankAccount() {
                 <p className="text-white text-lg capitalize">{user?.role}</p>
               </div>
             </div>
+
+            {/* Add Funds Button - Only for learners */}
+            {user?.role === 'learner' && (
+              <button
+                onClick={() => setShowAddFundsModal(true)}
+                className="mt-6 w-full md:w-auto bg-white text-primary hover:bg-gray-100 font-bold py-3 px-8 rounded-lg transition shadow-md"
+              >
+                💰 Add Funds
+              </button>
+            )}
           </div>
 
           <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -107,6 +155,91 @@ function BankAccount() {
           </div>
         </div>
       </div>
+
+      {/* Add Funds Modal */}
+      {showAddFundsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Add Funds</h2>
+              <button
+                onClick={() => {
+                  setShowAddFundsModal(false);
+                  setError('');
+                  setSuccessMessage('');
+                  setAddFundsAmount('');
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
+                {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4 text-sm">
+                {successMessage}
+              </div>
+            )}
+
+            <form onSubmit={handleAddFunds}>
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100000"
+                  value={addFundsAmount}
+                  onChange={(e) => setAddFundsAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary text-lg"
+                  required
+                />
+              </div>
+
+              {/* Quick Amount Buttons */}
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-2">Quick select:</p>
+                <div className="flex flex-wrap gap-2">
+                  {presetAmounts.map((amount) => (
+                    <button
+                      key={amount}
+                      type="button"
+                      onClick={() => setAddFundsAmount(amount.toString())}
+                      className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
+                        addFundsAmount === amount.toString()
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                      }`}
+                    >
+                      ₹{amount.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 mb-4">
+                Maximum single deposit: ₹1,00,000
+              </p>
+
+              <button
+                type="submit"
+                disabled={addingFunds || !addFundsAmount}
+                className="w-full bg-primary hover:bg-secondary text-white font-bold py-3 rounded-lg transition disabled:opacity-50"
+              >
+                {addingFunds ? 'Processing...' : `Add ₹${addFundsAmount ? parseFloat(addFundsAmount).toLocaleString() : '0'}`}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -65,6 +65,29 @@ const userSchema = new mongoose.Schema({
     },
     completedMaterials: [{
       type: String // Store material IDs
+    }],
+    quizAttempts: [{
+      quizId: {
+        type: String,
+        required: true
+      },
+      score: {
+        type: Number,
+        required: true
+      },
+      passed: {
+        type: Boolean,
+        required: true
+      },
+      answers: [{
+        questionIndex: Number,
+        selectedAnswer: Number,
+        isCorrect: Boolean
+      }],
+      attemptedAt: {
+        type: Date,
+        default: Date.now
+      }
     }]
   }],
   createdCourses: [{
